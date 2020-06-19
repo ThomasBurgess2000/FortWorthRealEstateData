@@ -82,7 +82,7 @@ userChoice=99
 def loadProperties():
     global properties
     global property_count
-    with open ('C:/Users/Thomas/Desktop/Personal Python/PropertyData_R_2019.txt') as csv_file:
+    with open ('PropertyData_R_2019.txt') as csv_file:
         csv_reader = csv.reader(csv_file,delimiter='|')
         line_count = 0
         for row in csv_reader:
@@ -101,14 +101,14 @@ def loadProperties():
 
 #Exports properties loaded from CSV (and any data merged from Redfin or other sources) to pickle
 def exportPickle():
-    with open('C:/Users/Thomas/Desktop/Personal Python/property.pickle', 'wb') as f:
+    with open('property.pickle', 'wb') as f:
         pickle.dump(properties,f)
     print("\nDone!\n")
 
 #Imports properties from pickle
 def importPickle():
     global properties
-    with open ('C:/Users/Thomas/Desktop/Personal Python/property.pickle', 'rb') as f:
+    with open ('property.pickle', 'rb') as f:
         properties=pickle.load(f)
     print("\nDone!\n")
 
@@ -145,7 +145,7 @@ def redfinImport():
     global properties
     global redfinProperties
 
-    with open ('C:/Users/Thomas/Desktop/Personal Python/hedgefieldarearedfin.csv') as csv_file:
+    with open ('hedgefieldarearedfin.csv') as csv_file:
         csv_reader = csv.reader(csv_file,delimiter=',')
         line_count=0
         for row in csv_reader:
