@@ -2,6 +2,8 @@ import csv
 import pickle
 import pandas as pd 
 from sklearn import datasets
+import numpy as np
+import os
 
 class Property:
     def __init__(self,RP,Appraisal_Year,Account_Num,Record_Type,Sequence_No,PIDN,Owner_Name,Owner_Address,Owner_CityState,Owner_Zip,Owner_Zip4,Owner_CRRT,Situs_Address,Property_Class,TAD_Map,MAPSCO,Exemption_Code,State_Use_Code,LegalDescription,Notice_Date,County,City,School,Num_Special_Dist,Spec1,Spec2,Spec3,Spec4,Spec5,Deed_Date,Deed_Book,Deed_Page,Land_Value,Improvement_Value,Total_Value,Garage_Capacity,Num_Bedrooms,Num_Bathrooms,Year_Built,Living_Area,Swimming_Pool_Ind,ARB_Indicator,Ag_Code,Land_Acres,Land_SqFt,Ag_Acres,Ag_Value,Central_Heat_Ind,Central_Air_Ind,Structure_Count,From_Accts,Appraisal_Date,Appraised_Value,GIS_Link,Instrument_No,Overlap_Flag):
@@ -144,17 +146,17 @@ def printAddressData(address):
 def redfinImport():
     global properties
     global redfinProperties
-
-    with open ('hedgefieldarearedfin.csv') as csv_file:
-        csv_reader = csv.reader(csv_file,delimiter=',')
-        line_count=0
-        for row in csv_reader:
-            if line_count == 0:
-                line_count += 1
-            else:
-                redfinProperties.append(redfinProperty(row[3],row[7],row[1],row[11]))
-                #print (redfinProperties[0].address+ " " + redfinProperties[0].price + " " +redfinProperties[0].date + "\n")
-                line_count += 1
+    for filename in os.listdir('Redfin'):
+        with open (os.path.join('Redfin/',filename)) as csv_file:
+            csv_reader = csv.reader(csv_file,delimiter=',')
+            line_count=0
+            for row in csv_reader:
+                if line_count == 0:
+                    line_count += 1
+                else:
+                    redfinProperties.append(redfinProperty(row[3],row[7],row[1],row[11]))
+                    #print (redfinProperties[0].address+ " " + redfinProperties[0].price + " " +redfinProperties[0].date + "\n")
+                    line_count += 1
     redfin_count=0
     for lot in redfinProperties:
         property_count=0
@@ -169,6 +171,10 @@ def redfinImport():
     print("\nDone!\n")
 
 #Menu
+#SET WORKING DIRECTORY HERE
+os.chdir('C:/Users/Thomas/Desktop/FortWorthRealEstateData')
+print ("Working directory is: " + os.getcwd())
+#print ("Contents of directory: " + str(os.listdir()))
 while (userChoice!='0'):
     print ("\nSelect your choice from the menu (e.g. '2'):\n1: Load properties into program from TAD CSV\n2: Load properties into program from pickle\n3: Export properties to pickle\n4: Print all data on address\n5: Merge Redfin file with TAD data\n0: Quit program\n")
     userChoice=input()
