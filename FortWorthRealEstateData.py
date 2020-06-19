@@ -1,5 +1,7 @@
 import csv
 import pickle
+import pandas as pd 
+from sklearn import datasets
 
 class Property:
     def __init__(self,RP,Appraisal_Year,Account_Num,Record_Type,Sequence_No,PIDN,Owner_Name,Owner_Address,Owner_CityState,Owner_Zip,Owner_Zip4,Owner_CRRT,Situs_Address,Property_Class,TAD_Map,MAPSCO,Exemption_Code,State_Use_Code,LegalDescription,Notice_Date,County,City,School,Num_Special_Dist,Spec1,Spec2,Spec3,Spec4,Spec5,Deed_Date,Deed_Book,Deed_Page,Land_Value,Improvement_Value,Total_Value,Garage_Capacity,Num_Bedrooms,Num_Bathrooms,Year_Built,Living_Area,Swimming_Pool_Ind,ARB_Indicator,Ag_Code,Land_Acres,Land_SqFt,Ag_Acres,Ag_Value,Central_Heat_Ind,Central_Air_Ind,Structure_Count,From_Accts,Appraisal_Date,Appraised_Value,GIS_Link,Instrument_No,Overlap_Flag):
