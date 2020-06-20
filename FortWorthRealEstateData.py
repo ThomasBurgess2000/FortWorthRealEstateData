@@ -5,6 +5,9 @@ from sklearn import datasets
 import numpy as np
 import os
 
+# I originally did everything with this Property class (crucial to the loadProperties function) but later realized I should have used pandas to read in the file at the beginning.
+# I may later decide it's worth it to redo it using pandas dataframe from the get-go instead of converting objects later.
+
 class Property:
     def __init__(self,RP,Appraisal_Year,Account_Num,Record_Type,Sequence_No,PIDN,Owner_Name,Owner_Address,Owner_CityState,Owner_Zip,Owner_Zip4,Owner_CRRT,Situs_Address,Property_Class,TAD_Map,MAPSCO,Exemption_Code,State_Use_Code,LegalDescription,Notice_Date,County,City,School,Num_Special_Dist,Spec1,Spec2,Spec3,Spec4,Spec5,Deed_Date,Deed_Book,Deed_Page,Land_Value,Improvement_Value,Total_Value,Garage_Capacity,Num_Bedrooms,Num_Bathrooms,Year_Built,Living_Area,Swimming_Pool_Ind,ARB_Indicator,Ag_Code,Land_Acres,Land_SqFt,Ag_Acres,Ag_Value,Central_Heat_Ind,Central_Air_Ind,Structure_Count,From_Accts,Appraisal_Date,Appraised_Value,GIS_Link,Instrument_No,Overlap_Flag):
         self.RP = RP
@@ -137,13 +140,13 @@ class redfinProperty:
         self.date = date
         self.sqft = sqft
 
-#Global Variables
+# Global Variables
 properties = []
 redfinProperties = []
 property_count = 0
 userChoice=99
 
-#Loads properties from data downloaded from http://www.tad.org/Data_files/Download_files/PropertyData_R_2019(Certified).ZIP
+# Loads properties from data downloaded from http://www.tad.org/Data_files/Download_files/PropertyData_R_2019(Certified).ZIP
 def loadProperties():
     global properties
     global property_count
@@ -165,13 +168,13 @@ def loadProperties():
         makePropertyFrame()
         print("\nDone!\n")
 
-#Exports properties loaded from CSV (and any data merged from Redfin or other sources) to pickle
+# Exports properties loaded from CSV (and any data merged from Redfin or other sources) to pickle
 def exportPickle():
     with open('property.pickle', 'wb') as f:
         pickle.dump(properties,f)
     print("\nDone!\n")
 
-#Imports properties from pickle
+# Imports properties from pickle
 def importPickle():
     global properties
     with open ('property.pickle', 'rb') as f:
@@ -179,7 +182,7 @@ def importPickle():
     makePropertyFrame()
     print("\nDone!\n")
 
-#Prints every address and market value (from TAD)
+# Prints every address and market value (from TAD)
 def printAllValues():
     property_count=0
     for item in properties:
@@ -187,7 +190,7 @@ def printAllValues():
         property_count += 1
     print("\nDone!\n")
 
-#Prints all data on given address
+# Prints all data on given address
 def printAddressData(address):
     # property_count=0
     # global properties
@@ -213,7 +216,7 @@ def printAddressSummary(address):
     property_row = propertyFrame.loc[address.upper(),['Total_Value', 'Appraisal_Year','Owner_Name','Owner_Address','Owner_Zip','Property_Class','Deed_Date','Land_Acres','redfinSqft','redfinSoldPrice','redfinSoldDate']]
     print (property_row)
 
-#Adds the prices of the homes sold in the last year to the corresponding property object. Data from Redfin.
+# Adds the prices of the homes sold in the last year to the corresponding property object. Data from Redfin.
 def redfinImport():
     global properties
     global redfinProperties
@@ -249,11 +252,12 @@ def makePropertyFrame():
     propertyFrame.index.names = [None]
 
 
-#Menu
-#SET WORKING DIRECTORY HERE
+# Menus
+# SET WORKING DIRECTORY HERE
 os.chdir('C:/Users/Thomas/Desktop/FortWorthRealEstateData')
 print ("Working directory is: " + os.getcwd())
 
+# First menu
 while (userChoice!='0'):
     print ("\nSelect your choice from the menu (e.g. '2'):\n1: Load properties into program from previously saved pickle\n2: Load properties into program from TAD CSV\n3: Merge Redfin file with TAD data\n4: Export properties to pickle\n0: Done manipulating data, move on to next menu.\n")
     userChoice=input()
@@ -276,7 +280,7 @@ while (userChoice!='0'):
         print("You entered: " + userChoice + ". That was not a valid option, please try again.\n")
 userChoice = 1
 
-
+# Second menu
 while (userChoice!='0'):
     print("\nSelect your choice from the menu (e.g. '2'):\n1: Print all data on a property.\n2: Print summary of a property.\n3: Print first five rows of property data.\n0: Quit program.\n")
     userChoice=input()
