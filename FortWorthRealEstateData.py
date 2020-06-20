@@ -146,6 +146,8 @@ redfinProperties = []
 property_count = 0
 userChoice=99
 
+# GENERAL FUNCTIONS
+
 # Loads properties from data downloaded from http://www.tad.org/Data_files/Download_files/PropertyData_R_2019(Certified).ZIP
 def loadProperties():
     global properties
@@ -245,12 +247,18 @@ def redfinImport():
     makePropertyFrame()
     print("\nDone!\n")
 
+# Converts the property objects to a pandas dataframe
 def makePropertyFrame():
     global propertyFrame
     propertyFrame = pd.DataFrame(p.to_dict() for p in properties)
     propertyFrame = propertyFrame.set_index('Situs_Address')
     propertyFrame.index.names = [None]
 
+# ML FUNCTIONS
+
+# Regression model to predict Redfin sale price based on all other data
+
+# Model to determine factors that cause large gap between Redfin sale and appraised value
 
 # Menus
 # SET WORKING DIRECTORY HERE
