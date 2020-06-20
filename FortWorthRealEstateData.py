@@ -278,13 +278,17 @@ userChoice = 1
 
 
 while (userChoice!='0'):
-    print("\nSelect your choice from the menu (e.g. '2'):\n1: Print all data on an address.\n0: Quit program.\n")
+    print("\nSelect your choice from the menu (e.g. '2'):\n1: Print all data on a property.\n2: Print summary of a property.\n3: Print first five rows of property data.\n0: Quit program.\n")
     userChoice=input()
     if (userChoice=='1'):
         print("\nPlease enter address to search: \n")
         searchTerm=input()
         printAddressData(searchTerm)
     elif (userChoice=='2'):
+        print ("\nPlease enter an address to search: \n")
+        searchTerm=input()
+        printAddressSummary(searchTerm)
+    elif (userChoice=='3'):
         print (propertyFrame.head(5))
     elif (userChoice=='0'):
         print ("Goodbye!\n")
