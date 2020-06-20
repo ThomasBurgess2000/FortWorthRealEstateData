@@ -8,8 +8,8 @@ My goal today was just to start aggregating the data, but next steps are finding
 **Getting Started**
 
 <ol>
-  <li>Clone the repo.<li>
-  <li>Download whatever year of residential data you want from TAD and save it to the main directory.<li>
-  <li>Add whatever areas of Redfin data you want to the Redfin folder (it will iterate through all of them).<li>
-  <li>Make sure you change your working directory (right before the menu), and you should be set.<li>
+  <li>Clone the repo.</li>
+  <li>Download whatever year of residential data you want from TAD and save it to the main directory.</li>
+  <li>Add whatever areas of Redfin data you want to the Redfin folder (it will iterate through all of them).</li>
+  <li>Make sure you change your working directory (right before the menu), and you should be set.</li>
 <ol>
