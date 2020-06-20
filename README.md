@@ -7,6 +7,10 @@ My goal today was just to start aggregating the data, but next steps are finding
 
 **Getting Started**
 
-First you need to clone the repo. Download whatever data you want from TAD and save it to the main directory. Then create a directory within called "Redfin" and drop all your Redfin exports there. 
+First you need to clone the repo. 
 
-Make sure you change your working directory, and you should be set.
+Second, download whatever year of residential data you want from TAD and save it to the main directory. 
+
+Third, add whatever areas of Redfin data you want to the Redfin folder (it will iterate through all of them).
+
+Fourth, make sure you change your working directory (right before the menu), and you should be set.
