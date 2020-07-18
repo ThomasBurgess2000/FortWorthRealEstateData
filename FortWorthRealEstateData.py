@@ -1,9 +1,21 @@
 import csv
 import pickle
 import pandas as pd 
+import xgboost as xgb
 from sklearn import datasets
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import LabelBinarizer
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import explained_variance_score
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
+
+import math
 import numpy as np
 import os
+from sklearn import preprocessing
 
 # I originally did everything with this Property class (crucial to the loadProperties function) but later realized I should have used pandas to read in the file at the beginning.
 # I may later decide it's worth it to redo it using pandas dataframe from the get-go instead of converting objects later.
@@ -194,34 +206,24 @@ def printAllValues():
 
 # Prints all data on given address
 def printAddressData(address):
-    # property_count=0
-    # global properties
-    # for lot in properties:
-    #     if address.upper() in properties[property_count].Situs_Address:
-    #         print ("\nAddress [TAD]: " + properties[property_count].Situs_Address)
-    #         print ("Market Value [TAD]: " + properties[property_count].Total_Value)
-    #         print ("Appraisal Year [TAD]: " + properties[property_count].Appraisal_Year)
-    #         print ("Owner Name [TAD]: " + properties[property_count].Owner_Name)
-    #         print ("Owner Address [TAD]: " + properties[property_count].Owner_Address + ", " + properties[property_count].Owner_Zip)
-    #         print ("Property Class [TAD]: " + properties[property_count].Property_Class)
-    #         print ("Deed Date [TAD]: " + properties[property_count].Deed_Date)
-    #         print ("Acres [TAD]: " + properties[property_count].Land_Acres)
-    #         print ("Sqft [Redfin]: " + properties[property_count].redfinSqft)
-    #         print ("Last sold price [Redfin]: " + properties[property_count].redfinSoldPrice)
-    #         print ("Last sold date [Redfin]: " + properties[property_count].redfinSoldDate + "\n")
-    #     property_count += 1
-    # This is much more efficient lol
-    property_row = propertyFrame.loc[address.upper(),:]
-    print (property_row)
+    try:
+        property_row = propertyFrame.loc[address.upper(),:]
+        print (property_row)
+    except:
+        print ("Property not found")
 
 def printAddressSummary(address):
-    property_row = propertyFrame.loc[address.upper(),['Total_Value', 'Appraisal_Year','Owner_Name','Owner_Address','Owner_Zip','Property_Class','Deed_Date','Land_Acres','redfinSqft','redfinSoldPrice','redfinSoldDate']]
-    print (property_row)
-
+    try:
+        property_row = propertyFrame.loc[address.upper(),['Total_Value', 'Appraisal_Year','Owner_Name','Owner_Address','Owner_Zip','Property_Class','Deed_Date','Land_Acres','redfinSqft','redfinSoldPrice','redfinSoldDate']]
+        print (property_row)
+    except:
+        print ("Property not found")
 # Adds the prices of the homes sold in the last year to the corresponding property object. Data from Redfin.
 def redfinImport():
     global properties
     global redfinProperties
+    global propertyFrame 
+    propertyFrame = propertyFrame[~propertyFrame.index.duplicated()]
     for filename in os.listdir('Redfin'):
         with open (os.path.join('Redfin/',filename)) as csv_file:
             csv_reader = csv.reader(csv_file,delimiter=',')
@@ -231,21 +233,25 @@ def redfinImport():
                     line_count += 1
                 else:
                     redfinProperties.append(redfinProperty(row[3],row[7],row[1],row[11]))
-                    #print (redfinProperties[0].address+ " " + redfinProperties[0].price + " " +redfinProperties[0].date + "\n")
                     line_count += 1
-    redfin_count=0
+    i=0
     for lot in redfinProperties:
-        property_count=0
-        for lot in properties:
-            if redfinProperties[redfin_count].address.upper() in properties[property_count].Situs_Address:
-                properties[property_count].redfinSoldPrice = redfinProperties[redfin_count].price
-                properties[property_count].redfinSoldDate = redfinProperties[redfin_count].date
-                properties[property_count].redfinSqft = redfinProperties[redfin_count].sqft
-                #print (redfinProperties[redfin_count].address + " found, it is worth " + str(properties[property_count].Total_Value+" and sold for "+str(redfinProperties[redfin_count].price)+" on " + properties[property_count].redfinSoldDate+ "\n"))
-            property_count += 1
-        redfin_count += 1
-    makePropertyFrame()
-    print("\nDone!\n")
+        print ("Getting Redfin for: "+str(lot.address.upper()))
+        i=i+1
+        #print ("Redfin sold price for " + lot.address.upper() + propertyFrame.loc[lot.address.upper(),"redfinSoldPrice"])
+        propertyFrame.loc[str(lot.address.upper()),"redfinSoldPrice"]=lot.price
+        propertyFrame.loc[str(lot.address.upper()),"redfinSoldDate"]=lot.date
+        propertyFrame.loc[str(lot.address.upper()),"redfinSqft"]=lot.sqft
+        # property_count=0
+        # for lot in properties:
+        #     if redfinProperties[redfin_count].address.upper() in properties[property_count].Situs_Address:
+        #         properties[property_count].redfinSoldPrice = redfinProperties[redfin_count].price
+        #         properties[property_count].redfinSoldDate = redfinProperties[redfin_count].date
+        #         properties[property_count].redfinSqft = redfinProperties[redfin_count].sqft
+        #         #print (redfinProperties[redfin_count].address + " found, it is worth " + str(properties[property_count].Total_Value+" and sold for "+str(redfinProperties[redfin_count].price)+" on " + properties[property_count].redfinSoldDate+ "\n"))
+        #     property_count += 1
+        # redfin_count += 1
+    print("\nDone! " + str(i) + " properties added.\n")
 
 # Converts the property objects to a pandas dataframe
 def makePropertyFrame():
@@ -257,6 +263,64 @@ def makePropertyFrame():
 # ML FUNCTIONS
 
 # Regression model to predict Redfin sale price based on all other data
+
+def letsBoost():
+    #Remove properties that don't have redfin
+    print ("Let's boost!")
+    print ("Running...")
+    pfLocal = propertyFrame
+    pfLocal= pfLocal.replace("N/A",np.NaN)
+    nullRemoved = pfLocal[pfLocal.redfinSoldPrice.notnull()]
+    print (nullRemoved.head(5))
+    train_x = nullRemoved.drop(columns=['Account_Num','Deed_Book','Deed_Page','Instrument_No','Owner_Zip','Owner_Name','Owner_Address','Owner_CityState','Owner_Zip4','Owner_CRRT','GIS_Link', 'LegalDescription', 'Deed_Date','PIDN', 'redfinSoldDate'],axis=1)
+    #train_x = train_x.drop(columns=['redfinSoldPrice'],axis=1)
+    #OHE
+    # ohe_county = pd.get_dummies(train_x['County'])
+    # ohe_city = pd.get_dummies(train_x['City'])
+    # ohe_school = pd.get_dummies(train_x['School'])
+    ohe_rest = pd.get_dummies(train_x,drop_first=True, columns=['RP', 'Record_Type', 'Property_Class', 'TAD_Map', 'MAPSCO', 'Exemption_Code', 'State_Use_Code', 'Notice_Date', 'Num_Special_Dist', 'Spec1', 'Spec2', 'Spec3', 'Spec4', 'Spec5', 'Swimming_Pool_Ind', 'ARB_Indicator', 'Ag_Code', 'Central_Heat_Ind', 'Central_Air_Ind', 'From_Accts', 'Appraisal_Date', 'Overlap_Flag','County','City','School'])
+    #maybe later convert date to numeric
+    print ("Finished one hot encoding")
+    #Remove useless and OHE'd
+    #train_x = train_x.drop(columns=['Deed_Book','Deed_Page','Instrument_No','County','City','School','Owner_Zip','Owner_Name','Owner_Address','Owner_CityState','Owner_Zip4','Owner_CRRT','GIS_Link', 'LegalDescription', 'Deed_Date','PIDN'],axis=1)
+    #print ("Finished dropping")
+
+
+    #Combine OHE
+    #train_x_final = pd.concat([train_x,ohe_rest], axis=1)
+    train_x_final = ohe_rest
+    print ("Now converting to numeric.")
+    cols = ["Appraisal_Year","Sequence_No","Land_Value", "Improvement_Value", "Total_Value", "Garage_Capacity","Num_Bedrooms", "Num_Bathrooms", "Year_Built", "Living_Area","Land_Acres", "Land_SqFt", "Ag_Acres", "Ag_Value","Structure_Count","Appraised_Value","redfinSoldPrice", "redfinSqft"]
+    train_x_final[cols] = train_x[cols].apply(pd.to_numeric,errors='coerce')
+    print ("Finished converting to numeric.")
+    #Output head of data
+    print (str(len(train_x_final.index)) + " properties in model.")
+    #Split into test and train
+    train_x_final.to_csv(r'train_x_final.csv')
+    train, test = train_test_split(train_x_final,test_size=0.2,random_state=42, shuffle=True)
+    train_x_final = train.drop(columns=['redfinSoldPrice'],axis=1)
+    train_y_final = train['redfinSoldPrice']
+    test_x_final = test.drop(columns=['redfinSoldPrice'],axis=1)
+    test_y_final = test['redfinSoldPrice']
+
+    xgbooster = xgb.XGBRegressor()
+    xgbooster.fit(train_x_final,train_y_final)
+    predictions = xgbooster.predict(test_x_final)
+    predictionSeries = pd.Series(predictions)
+    predictionSeries.to_csv(r'predictions.csv')
+    test_y_final.to_csv(r'test_y_final.csv')
+    print("Explained variance score: " + str(explained_variance_score(test_y_final,predictions)))
+    print("Mean absolute error: " + str(mean_absolute_error(test_y_final,predictions)))
+    print("R2 score: " + str(r2_score(test_y_final,predictions)))
+    print("Mean squared error: " + str(mean_squared_error(test_y_final,predictions)))
+
+def testing():
+    pfLocal = propertyFrame
+    pfLocal= pfLocal.replace("N/A",np.NaN)
+    print (pfLocal.redfinSoldPrice.notnull())
+    print (pfLocal.head(5))
+    print (pfLocal.redfinSoldPrice)
+    print (pfLocal.redfinSoldPrice.dtypes)
 
 # Model to determine factors that cause large gap between Redfin sale and appraised value
 
@@ -290,7 +354,7 @@ userChoice = 1
 
 # Second menu
 while (userChoice!='0'):
-    print("\nSelect your choice from the menu (e.g. '2'):\n1: Print all data on a property.\n2: Print summary of a property.\n3: Print first five rows of property data.\n0: Quit program.\n")
+    print("\nSelect your choice from the menu (e.g. '2'):\n1: Print all data on a property.\n2: Print summary of a property.\n3: Print first five rows of property data.\n4: Run XGBoost on data to predict Redfin sale price based on all other\n0: Quit program.\n")
     userChoice=input()
     if (userChoice=='1'):
         print("\nPlease enter address to search: \n")
@@ -302,7 +366,13 @@ while (userChoice!='0'):
         printAddressSummary(searchTerm)
     elif (userChoice=='3'):
         print (propertyFrame.head(5))
+    elif (userChoice=='4'):
+        letsBoost()
+    elif (userChoice=='42'):
+        testing()
     elif (userChoice=='0'):
         print ("Goodbye!\n")
     else:
         print("You entered: " + userChoice + ". That was not a valid option, please try again.\n")
+
+        
