@@ -218,6 +218,7 @@ def printAddressSummary(address):
         print (property_row)
     except:
         print ("Property not found")
+        
 # Adds the prices of the homes sold in the last year to the corresponding property object. Data from Redfin.
 def redfinImport():
     global properties
@@ -238,19 +239,9 @@ def redfinImport():
     for lot in redfinProperties:
         print ("Getting Redfin for: "+str(lot.address.upper()))
         i=i+1
-        #print ("Redfin sold price for " + lot.address.upper() + propertyFrame.loc[lot.address.upper(),"redfinSoldPrice"])
         propertyFrame.loc[str(lot.address.upper()),"redfinSoldPrice"]=lot.price
         propertyFrame.loc[str(lot.address.upper()),"redfinSoldDate"]=lot.date
         propertyFrame.loc[str(lot.address.upper()),"redfinSqft"]=lot.sqft
-        # property_count=0
-        # for lot in properties:
-        #     if redfinProperties[redfin_count].address.upper() in properties[property_count].Situs_Address:
-        #         properties[property_count].redfinSoldPrice = redfinProperties[redfin_count].price
-        #         properties[property_count].redfinSoldDate = redfinProperties[redfin_count].date
-        #         properties[property_count].redfinSqft = redfinProperties[redfin_count].sqft
-        #         #print (redfinProperties[redfin_count].address + " found, it is worth " + str(properties[property_count].Total_Value+" and sold for "+str(redfinProperties[redfin_count].price)+" on " + properties[property_count].redfinSoldDate+ "\n"))
-        #     property_count += 1
-        # redfin_count += 1
     print("\nDone! " + str(i) + " properties added.\n")
 
 # Converts the property objects to a pandas dataframe
@@ -273,17 +264,9 @@ def letsBoost():
     nullRemoved = pfLocal[pfLocal.redfinSoldPrice.notnull()]
     print (nullRemoved.head(5))
     train_x = nullRemoved.drop(columns=['Account_Num','Deed_Book','Deed_Page','Instrument_No','Owner_Zip','Owner_Name','Owner_Address','Owner_CityState','Owner_Zip4','Owner_CRRT','GIS_Link', 'LegalDescription', 'Deed_Date','PIDN', 'redfinSoldDate'],axis=1)
-    #train_x = train_x.drop(columns=['redfinSoldPrice'],axis=1)
-    #OHE
-    # ohe_county = pd.get_dummies(train_x['County'])
-    # ohe_city = pd.get_dummies(train_x['City'])
-    # ohe_school = pd.get_dummies(train_x['School'])
     ohe_rest = pd.get_dummies(train_x,drop_first=True, columns=['RP', 'Record_Type', 'Property_Class', 'TAD_Map', 'MAPSCO', 'Exemption_Code', 'State_Use_Code', 'Notice_Date', 'Num_Special_Dist', 'Spec1', 'Spec2', 'Spec3', 'Spec4', 'Spec5', 'Swimming_Pool_Ind', 'ARB_Indicator', 'Ag_Code', 'Central_Heat_Ind', 'Central_Air_Ind', 'From_Accts', 'Appraisal_Date', 'Overlap_Flag','County','City','School'])
     #maybe later convert date to numeric
     print ("Finished one hot encoding")
-    #Remove useless and OHE'd
-    #train_x = train_x.drop(columns=['Deed_Book','Deed_Page','Instrument_No','County','City','School','Owner_Zip','Owner_Name','Owner_Address','Owner_CityState','Owner_Zip4','Owner_CRRT','GIS_Link', 'LegalDescription', 'Deed_Date','PIDN'],axis=1)
-    #print ("Finished dropping")
 
 
     #Combine OHE
