@@ -11,6 +11,7 @@ from sklearn.metrics import explained_variance_score
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
+import matplotlib.pyplot as plt 
 
 import math
 import numpy as np
@@ -81,6 +82,7 @@ class Property:
     redfinSoldPrice = "N/A"
     redfinSoldDate = "N/A"
     redfinSqft = "N/A"
+    redfinZipcode = "N/A"
 
     def to_dict(self):
         return {
@@ -142,15 +144,17 @@ class Property:
             'Overlap_Flag': self.Overlap_Flag,
             'redfinSoldPrice': self.redfinSoldPrice,
             'redfinSoldDate': self.redfinSoldDate,
-            'redfinSqft': self.redfinSqft
+            'redfinSqft': self.redfinSqft,
+            'redfinZipcode' : self.redfinZipcode
         }
 
 class redfinProperty:
-    def __init__(self,address,price,date,sqft):
+    def __init__(self,address,price,date,sqft,zipcode):
         self.address = address
         self.price = price
         self.date = date
         self.sqft = sqft
+        self.zipcode = zipcode
 
 # Global Variables
 properties = []
@@ -184,16 +188,17 @@ def loadProperties():
 
 # Exports properties loaded from CSV (and any data merged from Redfin or other sources) to pickle
 def exportPickle():
+    global propertyFrame
     with open('property.pickle', 'wb') as f:
-        pickle.dump(properties,f)
+        pickle.dump(propertyFrame,f)
     print("\nDone!\n")
 
 # Imports properties from pickle
 def importPickle():
     global properties
+    global propertyFrame
     with open ('property.pickle', 'rb') as f:
-        properties=pickle.load(f)
-    makePropertyFrame()
+        propertyFrame=pickle.load(f)
     print("\nDone!\n")
 
 # Prints every address and market value (from TAD)
@@ -226,6 +231,7 @@ def redfinImport():
     global propertyFrame 
     propertyFrame = propertyFrame[~propertyFrame.index.duplicated()]
     for filename in os.listdir('Redfin'):
+        print ("Reading from " + str(filename))
         with open (os.path.join('Redfin/',filename)) as csv_file:
             csv_reader = csv.reader(csv_file,delimiter=',')
             line_count=0
@@ -233,7 +239,7 @@ def redfinImport():
                 if line_count == 0:
                     line_count += 1
                 else:
-                    redfinProperties.append(redfinProperty(row[3],row[7],row[1],row[11]))
+                    redfinProperties.append(redfinProperty(row[3],row[7],row[1],row[11],row[6]))
                     line_count += 1
     i=0
     for lot in redfinProperties:
@@ -242,6 +248,8 @@ def redfinImport():
         propertyFrame.loc[str(lot.address.upper()),"redfinSoldPrice"]=lot.price
         propertyFrame.loc[str(lot.address.upper()),"redfinSoldDate"]=lot.date
         propertyFrame.loc[str(lot.address.upper()),"redfinSqft"]=lot.sqft
+        propertyFrame.loc[str(lot.address.upper()),"redfinZipcode"]=lot.zipcode
+
     print("\nDone! " + str(i) + " properties added.\n")
 
 # Converts the property objects to a pandas dataframe
@@ -262,9 +270,10 @@ def letsBoost():
     pfLocal = propertyFrame
     pfLocal= pfLocal.replace("N/A",np.NaN)
     nullRemoved = pfLocal[pfLocal.redfinSoldPrice.notnull()]
+    
     print (nullRemoved.head(5))
-    train_x = nullRemoved.drop(columns=['Account_Num','Deed_Book','Deed_Page','Instrument_No','Owner_Zip','Owner_Name','Owner_Address','Owner_CityState','Owner_Zip4','Owner_CRRT','GIS_Link', 'LegalDescription', 'Deed_Date','PIDN', 'redfinSoldDate'],axis=1)
-    ohe_rest = pd.get_dummies(train_x,drop_first=True, columns=['RP', 'Record_Type', 'Property_Class', 'TAD_Map', 'MAPSCO', 'Exemption_Code', 'State_Use_Code', 'Notice_Date', 'Num_Special_Dist', 'Spec1', 'Spec2', 'Spec3', 'Spec4', 'Spec5', 'Swimming_Pool_Ind', 'ARB_Indicator', 'Ag_Code', 'Central_Heat_Ind', 'Central_Air_Ind', 'From_Accts', 'Appraisal_Date', 'Overlap_Flag','County','City','School'])
+    train_x = nullRemoved.drop(columns=['Account_Num','Deed_Book','Deed_Page','Instrument_No','Owner_Zip','Owner_Name','Owner_Address','Owner_CityState','Owner_Zip4','Owner_CRRT','GIS_Link', 'LegalDescription', 'Deed_Date','PIDN', 'redfinSoldDate','MAPSCO','TAD_Map'],axis=1)
+    ohe_rest = pd.get_dummies(train_x,drop_first=True, columns=['RP', 'Record_Type', 'Property_Class', 'Exemption_Code', 'State_Use_Code', 'Notice_Date', 'Num_Special_Dist', 'Spec1', 'Spec2', 'Spec3', 'Spec4', 'Spec5', 'Swimming_Pool_Ind', 'ARB_Indicator', 'Ag_Code', 'Central_Heat_Ind', 'Central_Air_Ind', 'From_Accts', 'Appraisal_Date', 'Overlap_Flag','County','City','School','redfinZipcode'])
     #maybe later convert date to numeric
     print ("Finished one hot encoding")
 
@@ -276,6 +285,8 @@ def letsBoost():
     cols = ["Appraisal_Year","Sequence_No","Land_Value", "Improvement_Value", "Total_Value", "Garage_Capacity","Num_Bedrooms", "Num_Bathrooms", "Year_Built", "Living_Area","Land_Acres", "Land_SqFt", "Ag_Acres", "Ag_Value","Structure_Count","Appraised_Value","redfinSoldPrice", "redfinSqft"]
     train_x_final[cols] = train_x[cols].apply(pd.to_numeric,errors='coerce')
     print ("Finished converting to numeric.")
+    #remove homes worth over a million, model doesn't work very well at that level
+    train_x_final = train_x_final[train_x_final['redfinSoldPrice'] < 1000000]
     #Output head of data
     print (str(len(train_x_final.index)) + " properties in model.")
     #Split into test and train
@@ -288,6 +299,8 @@ def letsBoost():
 
     xgbooster = xgb.XGBRegressor()
     xgbooster.fit(train_x_final,train_y_final)
+    score = xgbooster.score(train_x_final,train_y_final)
+    print ("Training score: " + str(score))
     predictions = xgbooster.predict(test_x_final)
     predictionSeries = pd.Series(predictions)
     predictionSeries.to_csv(r'predictions.csv')
@@ -296,6 +309,13 @@ def letsBoost():
     print("Mean absolute error: " + str(mean_absolute_error(test_y_final,predictions)))
     print("R2 score: " + str(r2_score(test_y_final,predictions)))
     print("Mean squared error: " + str(mean_squared_error(test_y_final,predictions)))
+
+    x_ax = range(len(test_y_final))
+    plt.plot(x_ax, test_y_final, label="original")
+    plt.plot(x_ax, predictions, label="predicted")
+    plt.title("Fort Worth test and predicted data")
+    plt.legend()
+    plt.show()
 
 def testing():
     pfLocal = propertyFrame
@@ -309,7 +329,7 @@ def testing():
 
 # Menus
 # SET WORKING DIRECTORY HERE
-os.chdir('C:/Users/Thomas/Desktop/FortWorthRealEstateData')
+os.chdir('C:/Users/thoma/Desktop/Projects/FortWorthRealEstateData')
 print ("Working directory is: " + os.getcwd())
 
 # First menu
